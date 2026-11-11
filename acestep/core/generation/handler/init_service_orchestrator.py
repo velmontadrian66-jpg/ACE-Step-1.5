@@ -9,6 +9,7 @@ import torch
 from loguru import logger
 
 from acestep import gpu_config
+from acestep.core.generation.handler.dtype_override import resolve_cuda_dtype_override
 
 _ROCM_DTYPE_MAP = {
     "float32": torch.float32,
@@ -89,7 +90,13 @@ class InitServiceOrchestratorMixin:
                     "(set ACESTEP_ROCM_DTYPE=bfloat16 or float16 to override)"
                 )
             elif resolved_device == "cuda":
-                if gpu_config.cuda_supports_bfloat16():
+                override_dtype = resolve_cuda_dtype_override()
+                if override_dtype is not None:
+                    self.dtype = override_dtype
+                    logger.info(
+                        f"[initialize_service] Using dtype={self.dtype} from ACESTEP_DTYPE."
+                    )
+                elif gpu_config.cuda_supports_bfloat16():
                     self.dtype = torch.bfloat16
                 else:
                     self.dtype = torch.float16

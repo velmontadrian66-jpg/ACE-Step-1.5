@@ -6,6 +6,7 @@ from typing import Optional
 import torch
 from loguru import logger
 
+from acestep.core.generation.handler.dtype_override import resolve_cuda_dtype_override
 from acestep.gpu_config import (
     cuda_supports_bfloat16,
     get_dit_type_from_path,
@@ -204,6 +205,9 @@ class MemoryUtilsMixin:
                 # On ROCm, defer to self.dtype which is already set to a safe
                 # value (float32 by default, or ACESTEP_ROCM_DTYPE override).
                 return getattr(self, "dtype", torch.float32)
+            override_dtype = resolve_cuda_dtype_override()
+            if override_dtype is not None:
+                return override_dtype
             if cuda_supports_bfloat16(_cuda_device_index(target_device)):
                 return torch.bfloat16
             return torch.float16
